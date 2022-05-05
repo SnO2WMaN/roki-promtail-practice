@@ -1,0 +1,53 @@
+version: '3.9'
+
+networks:
+  test:
+
+volumes:
+  nginx-log:
+
+services:
+  nginx:
+    image: nginx
+    ports:
+      - published: 8080
+        target: 80
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+      - type: bind
+        source: ./configs/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+    networks:
+      - test
+
+  promtail:
+    image: grafana/promtail:2.5.0
+    command: -config.file=/etc/promtail/config.yaml
+    volumes:
+      - type: bind
+        source: ./configs/promtail/config.yaml
+        target: /etc/promtail/config.yaml
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - test 
+
+  loki:
+    image: grafana/loki:2.5.0
+    command: -config.file=/etc/loki/config.yaml
+    ports:
+      - published: 3100
+        target: 3100
+    volumes:
+      - type: bind
+        source: ./configs/loki/config.yaml
+        target: /etc/loki/config.yaml
+    networks:
+      - test
+    
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - published: 3000
+        target: 3000
+    networks:
+      - test
